@@ -60,7 +60,6 @@ export const useAuthProvider = () => {
           };
           setCurrentUser(user);
           localStorage.setItem("currentUser", JSON.stringify(user));
-          toast.success("Admin login successful!");
           setIsLoading(false);
           return true;
         }
@@ -103,7 +102,6 @@ export const useAuthProvider = () => {
           };
           setCurrentUser(user);
           localStorage.setItem("currentUser", JSON.stringify(user));
-          toast.success("Business login successful!");
           setIsLoading(false);
           return true;
         }
@@ -203,7 +201,6 @@ export const useAuthProvider = () => {
         setCurrentUser(workerUser);
         localStorage.setItem("currentUser", JSON.stringify(workerUser));
         
-        toast.success("Login successful!");
         setIsLoading(false);
         return true;
       } else {

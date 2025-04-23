@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import { MigrantWorker } from '@/types/worker';
 import { toast } from 'sonner';
+import { generateWorkerId } from "./workerUtils";
 
 // Firebase auth compatibility types
 export const auth = {
@@ -28,6 +29,12 @@ export class RecaptchaVerifier {
   }
 }
 
+// Get all workers from localStorage
+export const getAllWorkersFromStorage = (): MigrantWorker[] => {
+  const workersStr = localStorage.getItem('workers');
+  return workersStr ? JSON.parse(workersStr) : [];
+};
+
 // Firebase-compatible functions for Supabase
 export const registerWorkerInStorage = async (worker: {
   name: string;
@@ -44,7 +51,7 @@ export const registerWorkerInStorage = async (worker: {
   try {
     const newWorker = {
       ...worker,
-      id: crypto.randomUUID(),
+      id: generateWorkerId(),
       status: "active" as const,
       registrationDate: new Date().toISOString(),
     };
@@ -68,16 +75,6 @@ export const registerWorkerInStorage = async (worker: {
   } catch (error) {
     console.error("Error in registerWorkerInStorage:", error);
     throw error;
-  }
-};
-
-export const getAllWorkersFromStorage = (): MigrantWorker[] => {
-  try {
-    const storedWorkers = localStorage.getItem('workers');
-    return storedWorkers ? JSON.parse(storedWorkers) : [];
-  } catch (error) {
-    console.error("Error getting workers from localStorage:", error);
-    return [];
   }
 };
 

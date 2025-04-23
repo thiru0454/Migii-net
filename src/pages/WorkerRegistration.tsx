@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { WorkerRegistrationForm } from "@/components/forms/WorkerRegistrationForm";
@@ -12,14 +11,30 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useWorkersContext } from "@/contexts/WorkersContext";
 
 const WorkerRegistration = () => {
   const [registeredWorker, setRegisteredWorker] = useState<MigrantWorker | null>(null);
   const navigate = useNavigate();
+  const { addWorker } = useWorkersContext();
   
   const handleRegistrationSuccess = (worker: MigrantWorker) => {
-    setRegisteredWorker(worker);
-    toast.success("Worker registered successfully!");
+    // Ensure the worker object has the correct structure
+    const formattedWorker = {
+      ...worker,
+      id: worker.id || `worker_${Date.now()}`,
+      status: worker.status || "pending",
+      skill: worker.skill || worker.skills?.[0] || "", // Handle both single skill and skills array
+      originState: worker.originState || worker.location || "", // Handle both originState and location
+    };
+    
+    addWorker(formattedWorker);
+    setRegisteredWorker(formattedWorker);
+    
+    toast.success("Worker Registration Successful!", {
+      description: "Worker has been registered successfully. You can now download their ID card.",
+      duration: 5000,
+    });
   };
 
   return (
@@ -48,56 +63,35 @@ const WorkerRegistration = () => {
               </div>
             </Alert>
 
-            <Tabs defaultValue="id-card">
-              <TabsList>
-                <TabsTrigger value="id-card">ID Card</TabsTrigger>
-                <TabsTrigger value="new-registration">New Registration</TabsTrigger>
-                <TabsTrigger value="login-worker">Login with this Account</TabsTrigger>
-              </TabsList>
-              <TabsContent value="id-card" className="pt-6">
-                <div id={`worker-card-${registeredWorker.id}`} className="worker-card-container">
-                  <WorkerIDCard
-                    workerId={registeredWorker.id}
-                    name={registeredWorker.name}
-                    phone={registeredWorker.phone}
-                    skill={registeredWorker.skill}
-                    originState={registeredWorker.originState}
-                    photoUrl={registeredWorker.photoUrl}
-                  />
-                </div>
-                <div className="mt-6 flex justify-center gap-4">
-                  <Button 
-                    onClick={() => {
-                      toast.promise(generateWorkerIDCardPDF(registeredWorker.id), {
-                        loading: 'Generating ID Card...',
-                        success: 'ID Card downloaded successfully',
-                        error: 'Failed to download ID Card',
-                      });
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download ID Card
-                  </Button>
-                </div>
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    An SMS confirmation has been sent to {registeredWorker.phone} with registration details.
-                  </p>
-                </div>
-              </TabsContent>
-              <TabsContent value="new-registration" className="pt-6">
-                <WorkerRegistrationForm onSuccess={handleRegistrationSuccess} />
-              </TabsContent>
-              <TabsContent value="login-worker" className="pt-6">
-                <div className="text-center space-y-6">
-                  <p>You can now login with your registered phone number.</p>
-                  <Button onClick={() => navigate("/worker-login")}>
-                    Go to Worker Login
-                  </Button>
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="space-y-6">
+              <div id={`worker-card-${registeredWorker.id}`} className="worker-card-container">
+                <WorkerIDCard
+                  workerId={registeredWorker.id}
+                  name={registeredWorker.name}
+                  phone={registeredWorker.phone}
+                  skill={registeredWorker.skill}
+                  originState={registeredWorker.originState}
+                  photoUrl={registeredWorker.photoUrl}
+                />
+              </div>
+
+              <div className="flex flex-col items-center gap-6">
+                <Button 
+                  onClick={() => generateWorkerIDCardPDF(registeredWorker.id)}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download ID Card
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate("/worker-login")}
+                >
+                  Go to Worker Login
+                </Button>
+              </div>
+            </div>
           </div>
         ) : (
           <WorkerRegistrationForm onSuccess={handleRegistrationSuccess} />

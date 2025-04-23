@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +12,6 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, MapPin } from "lucide-react";
 import { registerWorkerInStorage } from "@/utils/firebase";
-import { sendOtpEmail } from "@/utils/emailService";
 
 const SKILLS = ["Construction Worker", "Plumber", "Electrician", "Carpenter", "Painter", "Gardener", "Driver", "Cleaner", "Cook", "Other"];
 const STATES = ["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"];
@@ -72,24 +70,7 @@ export function WorkerRegistrationForm({ onSuccess }: WorkerRegistrationFormProp
         longitude: location.longitude,
       };
 
-      // Send OTP email if email is provided
-      if (values.email) {
-        try {
-          console.log(`Attempting to send verification OTP to email: ${values.email}`);
-          const otpSent = await sendOtpEmail(values.email);
-          if (otpSent) {
-            toast.success(`Verification OTP sent to ${values.email}`);
-          } else {
-            console.error("Failed to send OTP email but continuing with registration");
-            toast.error("Could not send verification email, but registration will continue");
-          }
-        } catch (emailError) {
-          console.error("Error sending OTP email:", emailError);
-          toast.error("Failed to send verification email, but registration will continue");
-        }
-      }
-
-      // Use the registerWorkerInStorage utility from firebase.ts
+      // Register worker directly without OTP verification
       const registeredWorker = await registerWorkerInStorage(workerData);
       
       if (onSuccess) {

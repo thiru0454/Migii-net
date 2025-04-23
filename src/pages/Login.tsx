@@ -53,7 +53,6 @@ export default function Login() {
     try {
       const success = await login(username.trim(), password, "admin");
       if (success) {
-        toast.success("Admin login successful!");
         navigate("/admin-dashboard");
       } else {
         toast.error("Invalid admin credentials");
@@ -72,7 +71,6 @@ export default function Login() {
     try {
       const success = await login(username.trim(), password, "business");
       if (success) {
-        toast.success("Business login successful!");
         navigate("/business-dashboard");
       } else {
         toast.error("Invalid business credentials");
