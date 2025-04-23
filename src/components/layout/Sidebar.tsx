@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -70,16 +70,36 @@ const businessLinks = [
 const workerLinks = [
   {
     title: "Worker Portal",
-    href: "/worker-login",
+    href: "/worker-dashboard",
     icon: User,
   }
 ];
 
 export function Sidebar() {
   const [expanded, setExpanded] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileView = window.innerWidth < 768;
+      setIsMobile(isMobileView);
+      if (!isMobileView) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const getRelevantLinks = () => {
     const links = [...sidebarLinks];
@@ -111,168 +131,146 @@ export function Sidebar() {
     navigate('/');
   };
 
-  // Check if the current path is a login-related path
   const isLoginPath = location.pathname === "/login" || 
                      location.pathname === "/admin-login" || 
                      location.pathname === "/business-login" ||
                      location.pathname === "/worker-login";
 
+  const isLinkActive = (href: string) => {
+    if (href === "/") {
+      return location.pathname === "/";
+    }
+    if (href === "/worker-registration") {
+      return location.pathname === "/worker-registration";
+    }
+    return location.pathname.startsWith(href);
+  };
+
   return (
-    <div className="relative">
+    <>
+      {/* Mobile Menu Button - Fixed Position */}
+      <button
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        className={cn(
+          "fixed top-4 left-4 z-50 md:hidden",
+          "p-2 rounded-md transition-colors",
+          "bg-background hover:bg-accent",
+          "focus:outline-none focus:ring-2 focus:ring-accent"
+        )}
+      >
+        {mobileMenuOpen ? (
+          <X className="h-6 w-6" />
+        ) : (
+          <Menu className="h-6 w-6" />
+        )}
+      </button>
+
+      {/* Mobile Menu Overlay */}
+      {isMobile && mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-20 flex flex-col border-r bg-sidebar transition-all duration-300",
-          expanded ? "w-64" : "w-16"
+          "fixed inset-y-0 left-0 z-45",
+          "flex h-full w-64 flex-col",
+          "bg-sidebar border-r",
+          "transition-transform duration-300 ease-in-out",
+          isMobile && !mobileMenuOpen && "-translate-x-full",
+          isMobile && mobileMenuOpen && "translate-x-0"
         )}
       >
         <div className="flex items-center justify-between p-4">
-          {expanded && (
-            <Link
-              to="/"
-              className="flex items-center gap-2 font-semibold text-xl text-sidebar-foreground"
-            >
-              <img src="/migii-icon.svg" alt="Migii Logo" className="h-8 w-8" />
-              <span>MIGII</span>
-            </Link>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setExpanded(!expanded)}
-            className="text-sidebar-foreground"
+          <Link
+            to="/"
+            className="flex items-center gap-2 font-semibold text-xl text-sidebar-foreground"
+            onClick={() => setMobileMenuOpen(false)}
           >
-            {expanded ? <X size={20} /> : <Menu size={20} />}
-          </Button>
+            <img src="/migii-icon.svg" alt="Migii Logo" className="h-8 w-8" />
+            <span>MIGII</span>
+          </Link>
         </div>
 
-        <nav className="flex-1 space-y-2 px-2">
+        <nav className="flex-1 space-y-1 px-2 py-2 overflow-y-auto">
           {getRelevantLinks().map((link) => {
-            const isActive = location.pathname.startsWith(link.href);
+            const active = isLinkActive(link.href);
             return (
               <Link
                 key={link.href}
                 to={link.href}
+                onClick={() => setMobileMenuOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
-                  expanded ? "" : "justify-center",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm",
+                  "text-sidebar-foreground",
+                  "transition-colors hover:bg-accent/50 hover:text-accent-foreground",
+                  active && "bg-accent text-accent-foreground font-medium"
                 )}
               >
-                <link.icon size={20} />
-                {expanded && <span>{link.title}</span>}
+                <link.icon size={20} className="shrink-0" />
+                <span className="opacity-100">{link.title}</span>
               </Link>
             );
           })}
 
           {currentUser ? (
             <div className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all cursor-pointer mt-4",
-              expanded ? "" : "justify-center",
-              "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm mt-4",
+              "text-sidebar-foreground"
             )}>
-              {expanded ? (
-                <div className="flex w-full justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <User size={20} />
-                    <span>{currentUser.name || currentUser.email || "User"}</span>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={handleLogout} 
-                    className="text-sidebar-foreground"
-                  >
-                    <LogOut size={16} />
-                  </Button>
+              <div className="flex w-full justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <User size={20} className="shrink-0" />
+                  <span className="font-medium opacity-100">{currentUser.name || currentUser.email || "User"}</span>
                 </div>
-              ) : (
-                <User size={20} />
-              )}
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="p-1.5 rounded-md hover:bg-accent/50 hover:text-accent-foreground transition-colors"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="space-y-1 mt-4">
-              <Link
-                to="/login"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
-                  expanded ? "" : "justify-center",
-                  isLoginPath
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <LogIn size={20} />
-                {expanded && <span>Sign In</span>}
-              </Link>
-              {isLoginPath && expanded && (
-                <div className="pl-8 space-y-1">
-                  <Link
-                    to="/login?tab=admin"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
-                      location.search === "?tab=admin"
-                        ? "bg-sidebar-accent/80 text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/30"
-                    )}
-                  >
-                    <ShieldAlert size={16} />
-                    <span>Admin</span>
-                  </Link>
-                  <Link
-                    to="/login?tab=business"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
-                      location.search === "?tab=business"
-                        ? "bg-sidebar-accent/80 text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/30"
-                    )}
-                  >
-                    <Building size={16} />
-                    <span>Business</span>
-                  </Link>
-                  <Link
-                    to="/worker-login"
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
-                      location.pathname === "/worker-login"
-                        ? "bg-sidebar-accent/80 text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent/30"
-                    )}
-                  >
-                    <User size={16} />
-                    <span>Worker</span>
-                  </Link>
-                </div>
+            <Link
+              to="/login"
+              onClick={() => setMobileMenuOpen(false)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm mt-4",
+                "text-sidebar-foreground",
+                "transition-colors hover:bg-accent/50 hover:text-accent-foreground",
+                isLoginPath && "bg-accent text-accent-foreground font-medium"
               )}
-            </div>
+            >
+              <LogIn size={20} className="shrink-0" />
+              <span className="opacity-100">Migii Login</span>
+            </Link>
           )}
         </nav>
 
-        <div className="p-4">
-          {expanded ? (
-            <div className="flex flex-col gap-1">
-              <p className="text-xs text-sidebar-foreground/60">
-                Worker Management System
-              </p>
-              <p className="text-xs font-medium text-sidebar-foreground">
-                migii v1.0.0
-              </p>
-            </div>
-          ) : (
-            <div className="flex justify-center">
-              <span className="text-sidebar-foreground/60 text-xs">migii</span>
-            </div>
-          )}
+        <div className="p-4 border-t border-border/50">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs text-sidebar-foreground/60">
+              Worker Management System
+            </p>
+            <p className="text-xs font-medium text-sidebar-foreground">
+              migii v1.0.0
+            </p>
+          </div>
         </div>
       </aside>
-      <div
-        className={cn(
-          "transition-all duration-300",
-          expanded ? "ml-64" : "ml-16"
-        )}
-      ></div>
-    </div>
+
+      {/* Main Content Spacer */}
+      <div className={cn(
+        "transition-all duration-300",
+        isMobile ? "ml-0" : "ml-64"
+      )} />
+    </>
   );
 }
